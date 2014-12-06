@@ -113,21 +113,15 @@ class MyApp(ShowBase):
             self.accept("d-up", self.setKey, ["right", 0])
 
 
-        def followCameraTask(self, task):
-            #hpr = self.ralph.getHpr()
-            #facing = Vec3(cos(hpr.x))
-            #self.camera.setPos(self.ralph.getPos() - )
-            #self.camera.setHpr(hpr)
-            
+        def followCameraTask(self, task):           
+            radius = 10.0
             position = self.ralph.getPos(render)
             heading = self.ralph.getH(render) * (pi / 180.0) - pi * 0.5
             facing = Vec3(cos(heading), sin(heading), 0.0)
-            offset = Vec3(-10 * facing.getX(), -10 * facing.getY(), 5)
+            offset = Vec3(-radius * facing.getX(), -radius * facing.getY(), 5)
             
             self.camera.setPos(position + offset)
             self.camera.lookAt(self.ralph)
-            
-            self.notify.warning("Heading: " + str(heading) + ". Camera Heading: " + str(self.camera.getH(render) * (pi / 180)))
             
             return task.cont
 
