@@ -34,7 +34,7 @@ class MyApp(ShowBase):
             planeNP.setPos(0, 0, 0)
             self.world.attachRigidBody(planeNode)
 
-            # Setup dynamic physics object
+            # Setup dynamic character physics object
             capsule = BulletCapsuleShape(1, 1, ZUp)
             capsuleNode = BulletRigidBodyNode("Capsule")
             capsuleNode.setMass(1.0)
@@ -48,8 +48,9 @@ class MyApp(ShowBase):
             self.cylinder.setPos(-2, 2, 0)
             self.cylinder.setScale(1, 1, 1)
 
+            # Setup tasks
             self.taskMgr.add(self.followCameraTask, "FollowCameraTask")
-            self.taskMgr.add(self.update, "Update")
+            self.taskMgr.add(self.physicsUpdate, "PhysicsUpdate")
 
             self.ralph = Actor("Assets/Models/ralph",
                                     {"walk": "Assets/Models/ralph-walk",
@@ -83,7 +84,16 @@ class MyApp(ShowBase):
             #self.ralphPace.loop()
 
             # INPUT
+            self.keyMap = { "forward" : 0, "left" : 0, "backward" : 0, "right" : 0}
             self.accept("f1", self.toggleDebug)
+            self.accept("w", self.setKey, ["forward", 1])
+            self.accept("a", self.setKey, ["left", 1])
+            self.accept("s", self.setKey, ["backward", 1])
+            self.accept("d", self.setKey, ["right", 1])
+            self.accept("w-up", self.setKey, ["forward", 0])
+            self.accept("a-up", self.setKey, ["left", 0])
+            self.accept("s-up", self.setKey, ["backward", 0])
+            self.accept("d-up", self.setKey, ["right", 0])
 
 
         def followCameraTask(self, task):
@@ -92,12 +102,15 @@ class MyApp(ShowBase):
             #self.camera.setPos(self.ralph.getPos() - )
             #self.camera.setHpr(hpr)
             pos = self.ralph.getPos(render)
-            self.camera.setPos(pos.getX(), pos.getY() + 10, 5)
+            self.camera.setPos(pos.getX(), pos.getY() + 10, pos.getZ() + 5)
             self.camera.lookAt(self.ralph)
             return Task.cont
 
-        def update(self, task):
+        def physicsUpdate(self, task):
             dt = globalClock.getDt()
+
+            # TODO: Implement movement
+
             self.world.doPhysics(dt)
             return task.cont
 
@@ -106,6 +119,9 @@ class MyApp(ShowBase):
                 self.debugNP.show()
             else:
                 self.debugNP.hide()
+
+        def setKey(self, key, value):
+            self.keyMap[key] = value
 
 
 app = MyApp()
