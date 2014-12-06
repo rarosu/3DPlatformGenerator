@@ -1,5 +1,6 @@
 from math import pi, sin, cos
 
+from direct.directnotify.DirectNotify import DirectNotify
 from direct.showbase.ShowBase import ShowBase
 from direct.task import Task
 from direct.actor.Actor import Actor
@@ -13,6 +14,9 @@ class MyApp(ShowBase):
         def __init__(self):
             ShowBase.__init__(self)
 
+            # Add a debug category for logging.
+            self.notify = DirectNotify().newCategory("Logging")
+            
             # Add debug for Bullet
             debugNode = BulletDebugNode("Debug")
             debugNode.showWireframe(True)
@@ -27,7 +31,7 @@ class MyApp(ShowBase):
             self.world.setDebugNode(self.debugNP.node())
 
             # Setup ground plane
-            plane = BulletPlaneShape(Vec3(0, 0, 1), -1)
+            plane = BulletPlaneShape(Vec3(0, 0, 1), 0)
             planeNode = BulletRigidBodyNode("Ground")
             planeNode.addShape(plane)
             planeNP = render.attachNewNode(planeNode)
@@ -114,10 +118,18 @@ class MyApp(ShowBase):
             #facing = Vec3(cos(hpr.x))
             #self.camera.setPos(self.ralph.getPos() - )
             #self.camera.setHpr(hpr)
-            pos = self.ralph.getPos(render)
-            self.camera.setPos(pos.getX(), pos.getY() + 10, pos.getZ() + 5)
+            
+            position = self.ralph.getPos(render)
+            heading = self.ralph.getH(render) * (pi / 180.0) - pi * 0.5
+            facing = Vec3(cos(heading), sin(heading), 0.0)
+            offset = Vec3(-10 * facing.getX(), -10 * facing.getY(), 5)
+            
+            self.camera.setPos(position + offset)
             self.camera.lookAt(self.ralph)
-            return Task.cont
+            
+            self.notify.warning("Heading: " + str(heading) + ". Camera Heading: " + str(self.camera.getH(render) * (pi / 180)))
+            
+            return task.cont
 
         def physicsUpdate(self, task):
             dt = globalClock.getDt()
