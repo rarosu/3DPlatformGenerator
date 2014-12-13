@@ -5,8 +5,10 @@ from direct.showbase.ShowBase import ShowBase
 from direct.task import Task
 from direct.actor.Actor import Actor
 from direct.interval.IntervalGlobal import Sequence
-from panda3d.core import Point3, Vec4, Vec3, BitMask32
-from panda3d.core import DirectionalLight, AmbientLight
+#from panda3d.core import Point3, Vec4, Vec3, BitMask32
+#from panda3d.core import DirectionalLight, AmbientLight
+#from panda3d.core import GeomVertexArrayFormat
+from panda3d.core import *
 from panda3d.bullet import *
 
 class MyApp(ShowBase):
@@ -16,7 +18,7 @@ class MyApp(ShowBase):
 
             # Add a debug category for logging.
             self.notify = DirectNotify().newCategory("Logging")
-            
+
             # Add debug for Bullet
             debugNode = BulletDebugNode("Debug")
             debugNode.showWireframe(True)
@@ -41,10 +43,10 @@ class MyApp(ShowBase):
             # Setup dynamic character physics object
             playerHeight = 1.10
             playerRadius = 0.4
-            playerStepHeight = 0.4
-            playerJumpHeight = 5.0
-            playerJumpSpeed = 8.0
-            
+            playerStepHeight = 0.15 # NOTE: This is gravity for player controller because Bullet Physics accidentally a bug
+            playerJumpHeight = 2.0
+            playerJumpSpeed = 4.0
+
             playerCapsule = BulletCapsuleShape(playerRadius, playerHeight - 2 * playerRadius, ZUp)
             self.playerNode = BulletCharacterControllerNode(playerCapsule, playerStepHeight, "Player")
             self.playerNode.setMaxJumpHeight(playerJumpHeight)
@@ -59,6 +61,19 @@ class MyApp(ShowBase):
             self.cylinder.reparentTo(self.render)
             self.cylinder.setPos(-2, 2, 0)
             self.cylinder.setScale(1, 1, 1)
+
+            cylinderPos = self.cylinder.getPos()
+            cylinderGeom = self.cylinder.findAllMatches("**/+GeomNode").getPath(0).node().getGeom(0)
+            cylinderShape = BulletConvexHullShape()
+            cylinderShape.addGeom(cylinderGeom)
+            cylinderNode = BulletRigidBodyNode("Cylinder")
+            cylinderNode.addShape(cylinderShape)
+            cylinderNP = render.attachNewNode(cylinderNode)
+            cylinderNP.setPos(cylinderPos.getX(), cylinderPos.getY(), cylinderPos.getZ() + 1 )
+            self.world.attachRigidBody(cylinderNode)
+
+
+            self.makeCube()
 
             # Setup tasks
             self.taskMgr.add(self.followCameraTask, "FollowCameraTask")
@@ -98,11 +113,11 @@ class MyApp(ShowBase):
 
             # INPUT
             self.keyMap = { "forward" : 0, "left" : 0, "backward" : 0, "right" : 0}
-            
+
             self.accept("f1", self.toggleDebug)
-            
+
             self.accept("space", self.jump)
-            
+
             self.accept("w", self.setKey, ["forward", 1])
             self.accept("a", self.setKey, ["left", 1])
             self.accept("s", self.setKey, ["backward", 1])
@@ -113,16 +128,16 @@ class MyApp(ShowBase):
             self.accept("d-up", self.setKey, ["right", 0])
 
 
-        def followCameraTask(self, task):           
+        def followCameraTask(self, task):
             radius = 10.0
             position = self.ralph.getPos(render)
             heading = self.ralph.getH(render) * (pi / 180.0) - pi * 0.5
             facing = Vec3(cos(heading), sin(heading), 0.0)
             offset = Vec3(-radius * facing.getX(), -radius * facing.getY(), 5)
-            
+
             self.camera.setPos(position + offset)
             self.camera.lookAt(self.ralph)
-            
+
             return task.cont
 
         def physicsUpdate(self, task):
@@ -153,9 +168,77 @@ class MyApp(ShowBase):
 
         def setKey(self, key, value):
             self.keyMap[key] = value
-         
+
         def jump(self):
             self.playerNode.doJump()
+
+        def makeCube(self):
+            array = GeomVertexArrayFormat()
+            array.addColumn(InternalName.make('vertex'), 3, Geom.NTFloat32, Geom.CPoint)
+
+            format = GeomVertexFormat()
+            format.addArray(array)
+            format = GeomVertexFormat.registerFormat(format)
+
+            vdata = GeomVertexData('cube', format, Geom.UHStatic)
+            vdata.setNumRows(8)
+
+            vertex = GeomVertexWriter(vdata, 'vertex')
+
+            vertex.addData3f(0, 1, 0) #0
+            vertex.addData3f(1, 1, 0) #1
+            vertex.addData3f(0, 0, 0) #2
+            vertex.addData3f(1, 0, 0) #3
+
+            vertex.addData3f(0, 1, 1) #4
+            vertex.addData3f(1, 1, 1) #5
+            vertex.addData3f(0, 0, 1) #6
+            vertex.addData3f(1, 0, 1) #7
+
+            prim = GeomTriangles(Geom.UHStatic)
+            #bottom
+            prim.addVertices(1, 2, 0)
+            prim.addVertices(1, 3, 2)
+            #top
+            prim.addVertices(4, 6, 5)
+            prim.addVertices(6, 7, 5)
+            #front
+            prim.addVertices(2, 3, 6)
+            prim.addVertices(6, 3, 7)
+            #back
+            prim.addVertices(4, 1, 0)
+            prim.addVertices(5, 1, 4)
+            #left
+            prim.addVertices(0, 2, 4)
+            prim.addVertices(4, 2, 6)
+            #right
+            prim.addVertices(5, 3, 1)
+            prim.addVertices(7, 3, 5)
+
+            geom = Geom(vdata)
+            geom.addPrimitive(prim)
+
+            node = GeomNode('gnode')
+            node.addGeom(geom)
+
+            nodePath = render.attachNewNode(node)
+
+            #plane = BulletPlaneShape(Vec3(0, 0, 1), 0)
+            #planeNode = BulletRigidBodyNode("Ground")
+            #planeNode.addShape(plane)
+            #planeNP = render.attachNewNode(planeNode)
+            #planeNP.setPos(0, 0, 0)
+            #self.world.attachRigidBody(planeNode)
+
+            shape = BulletConvexHullShape()
+            shape.addGeom(geom)
+            shapeNode = BulletRigidBodyNode("Cube")
+            shapeNode.addShape(shape)
+            shapeNP = render.attachNewNode(shapeNode)
+            shapeNP.setPos(0, 0, 0)
+            self.world.attachRigidBody(shapeNode)
+
+
 
 
 app = MyApp()
