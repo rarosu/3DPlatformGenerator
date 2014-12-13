@@ -44,8 +44,8 @@ class MyApp(ShowBase):
             playerHeight = 1.10
             playerRadius = 0.4
             playerStepHeight = 0.15 # NOTE: This is gravity for player controller because Bullet Physics accidentally a bug
-            playerJumpHeight = 2.0
-            playerJumpSpeed = 4.0
+            playerJumpHeight = 1.0
+            playerJumpSpeed = 8.0
 
             playerCapsule = BulletCapsuleShape(playerRadius, playerHeight - 2 * playerRadius, ZUp)
             self.playerNode = BulletCharacterControllerNode(playerCapsule, playerStepHeight, "Player")
@@ -75,7 +75,8 @@ class MyApp(ShowBase):
             self.makeCube()
             
             # Load a level
-            self.level = Level("Assets/Levels/test.level")
+            self.level = Level("Assets/Levels/test.level", self.world)
+            self.level.CreateLevelGeometry()
 
             # Setup tasks
             self.taskMgr.add(self.followCameraTask, "FollowCameraTask")
@@ -146,12 +147,13 @@ class MyApp(ShowBase):
             dt = globalClock.getDt()
             
             # Update the character movement
+            c_speed = 5.0
             speed = 0
             angularSpeed = 0
             if self.keyMap["forward"] != 0:
-                speed = -3.0
+                speed = -c_speed
             if self.keyMap["backward"] != 0:
-                speed = 3.0
+                speed = c_speed
             if self.keyMap["left"] != 0:
                 angularSpeed = 60
             if self.keyMap["right"] != 0:
@@ -241,7 +243,14 @@ class MyApp(ShowBase):
             self.world.attachRigidBody(shapeNode)
 
 class Level:
-    def __init__(self, filepath):
+    def __init__(self, filepath, bulletworld):
+        self.blockLength = 2
+        self.blockWidth = 4
+        self.blockHeight = 1.5
+        self.ground_z = 1
+        
+        self.bulletworld = bulletworld
+    
         file = open(filepath)
         
         s = file.readline().strip()
@@ -277,8 +286,158 @@ class Level:
         self.curve = BezierCurve(cp)
         
     def ProcessGenotype(self, genotypeString):
-        pass
+        self.genotype = []
+        
+        for c in genotypeString:
+            self.genotype.append(int(c, 16))
+        
+    def CreateLevelGeometry(self):
+        t = 0
+        
+        for allele in self.genotype:
+            # Find the next t where the blocks will end.
+            next_t = self.StepToNextBlock(t)
             
+            # Create the blocks needed for the current allele.
+            if allele == 0:
+                pass
+            elif allele == 1:
+                self.CreateBlock(t, next_t, self.ground_z)
+            elif allele == 2:
+                self.CreateBlock(t, next_t, self.ground_z)
+                self.CreateBlock(t, next_t, self.ground_z + self.blockHeight)
+            elif allele == 3:
+                self.CreateBlock(t, next_t, self.ground_z)
+                self.CreateBlock(t, next_t, self.ground_z + self.blockHeight)
+                self.CreateBlock(t, next_t, self.ground_z + 2 * self.blockHeight)
+            elif allele == 4:
+                self.CreateBlock(t, next_t, self.ground_z)
+                self.CreateBlock(t, next_t, self.ground_z + self.blockHeight)
+                self.CreateBlock(t, next_t, self.ground_z + 2 * self.blockHeight)
+                self.CreateBlock(t, next_t, self.ground_z + 3 * self.blockHeight)
+            elif allele == 5:
+                self.CreateBlock(t, next_t, self.ground_z)
+                self.CreateBlock(t, next_t, self.ground_z + self.blockHeight)
+                self.CreateBlock(t, next_t, self.ground_z + 2 * self.blockHeight)
+                self.CreateBlock(t, next_t, self.ground_z + 3 * self.blockHeight)
+                self.CreateBlock(t, next_t, self.ground_z + 4 * self.blockHeight)
+            elif allele == 6:
+                self.CreateBlock(t, next_t, self.ground_z)
+                self.CreateBlock(t, next_t, self.ground_z + 2 * self.blockHeight)
+            elif allele == 7:
+                self.CreateBlock(t, next_t, self.ground_z)
+                self.CreateBlock(t, next_t, self.ground_z + 3 * self.blockHeight)
+            elif allele == 8:
+                self.CreateBlock(t, next_t, self.ground_z)
+                self.CreateBlock(t, next_t, self.ground_z + 4 * self.blockHeight)
+            elif allele == 9:
+                self.CreateBlock(t, next_t, self.ground_z + 2 * self.blockHeight)
+            elif allele == 0xA:
+                self.CreateBlock(t, next_t, self.ground_z + 3 * self.blockHeight)
+            elif allele == 0xB:
+                self.CreateBlock(t, next_t, self.ground_z + 4 * self.blockHeight)
+            elif allele == 0xC:
+                self.CreateBlock(t, next_t, self.ground_z)
+                self.CreateBlock(t, next_t, self.ground_z + 2 * self.blockHeight)
+                self.CreateBlock(t, next_t, self.ground_z + 4 * self.blockHeight)
+            elif allele == 0xD:
+                self.CreateBlock(t, next_t, self.ground_z)
+                self.CreateBlock(t, next_t, self.ground_z + self.blockHeight)
+                self.CreateBlock(t, next_t, self.ground_z + 3 * self.blockHeight)
+            elif allele == 0xE:
+                self.CreateBlock(t, next_t, self.ground_z)
+                self.CreateBlock(t, next_t, self.ground_z + self.blockHeight)
+                self.CreateBlock(t, next_t, self.ground_z + 4 * self.blockHeight)
+            elif allele == 0xF:
+                self.CreateBlock(t, next_t, self.ground_z + 2 * self.blockHeight)
+                self.CreateBlock(t, next_t, self.ground_z + 4 * self.blockHeight)
+                
+            t = next_t
+            
+    def StepToNextBlock(self, t):
+        ct = t
+        dt = 0.01
+        length = 0
+        
+        while length < self.blockLength:
+            v1 = self.curve.getPoint(ct)
+            v2 = self.curve.getPoint(ct + dt)
+            
+            length += (v2 - v1).length()
+            ct += dt
+        
+        return ct
+        
+    def CreateBlock(self, start_t, end_t, start_z):
+        array = GeomVertexArrayFormat()
+        array.addColumn(InternalName.make('vertex'), 3, Geom.NTFloat32, Geom.CPoint)
+
+        format = GeomVertexFormat()
+        format.addArray(array)
+        format = GeomVertexFormat.registerFormat(format)
+
+        vdata = GeomVertexData('cube', format, Geom.UHStatic)
+        vdata.setNumRows(8)
+
+        vertex = GeomVertexWriter(vdata, 'vertex')
+
+        BNormal = self.curve.getRightNormal(start_t)
+        UNormal = self.curve.getRightNormal(end_t)
+        BPos = self.curve.getPoint(start_t)
+        UPos = self.curve.getPoint(end_t)
+        UL = UNormal * self.blockWidth * -0.5 + UPos
+        UR = UNormal * self.blockWidth *  0.5 + UPos
+        BL = BNormal * self.blockWidth * -0.5 + BPos
+        BR = BNormal * self.blockWidth *  0.5 + BPos
+        LowerZ = Vec3(0, 0, start_z)
+        HigherZ = Vec3(0, 0, start_z + self.blockHeight)
+        
+        vertex.addData3f(UL + LowerZ) #0, UL
+        vertex.addData3f(UR + LowerZ) #1, UR
+        vertex.addData3f(BL + LowerZ) #2, BL
+        vertex.addData3f(BR + LowerZ) #3, BR
+
+        vertex.addData3f(UL + HigherZ) #4, UL
+        vertex.addData3f(UR + HigherZ) #5, UR
+        vertex.addData3f(BL + HigherZ) #6, BL
+        vertex.addData3f(BR + HigherZ) #7, BR
+        
+        prim = GeomTriangles(Geom.UHStatic)
+        #bottom
+        prim.addVertices(1, 2, 0)
+        prim.addVertices(1, 3, 2)
+        #top
+        prim.addVertices(4, 6, 5)
+        prim.addVertices(6, 7, 5)
+        #front
+        prim.addVertices(2, 3, 6)
+        prim.addVertices(6, 3, 7)
+        #back
+        prim.addVertices(4, 1, 0)
+        prim.addVertices(5, 1, 4)
+        #left
+        prim.addVertices(0, 2, 4)
+        prim.addVertices(4, 2, 6)
+        #right
+        prim.addVertices(5, 3, 1)
+        prim.addVertices(7, 3, 5)
+        
+        geom = Geom(vdata)
+        geom.addPrimitive(prim)
+
+        node = GeomNode('gnode')
+        node.addGeom(geom)
+
+        nodePath = render.attachNewNode(node)
+
+        shape = BulletConvexHullShape()
+        shape.addGeom(geom)
+        shapeNode = BulletRigidBodyNode("LevelTerrain")
+        shapeNode.addShape(shape)
+        shapeNP = render.attachNewNode(shapeNode)
+        shapeNP.setPos(0, 0, 0)
+        self.bulletworld.attachRigidBody(shapeNode)
+        
 class BezierSpline:
     # start, cp1, cp2 and end are type: panda3d.core.Vec3
     def __init__(self, start, cp1, cp2, end):
@@ -318,7 +477,7 @@ class BezierCurve:
         i = int(t)
         i = max(min(i, len(self.splines) - 1), 0)
         
-        if t > 0 and t < len(self.splines):
+        if t >= 0 and t < len(self.splines):
             return self.splines[i].getPoint(t - i)
         elif t < 0:
             point = self.splines[0].getPoint(0)
@@ -335,7 +494,7 @@ class BezierCurve:
         i = int(t)
         i = max(min(i, len(self.splines) - 1), 0)
         
-        if t > 0 and t < len(self.splines):
+        if t >= 0 and t < len(self.splines):
             return self.splines[i].getTangent(t - i)
         elif t < 0:
             tangent = self.splines[0].getTangent(0)
