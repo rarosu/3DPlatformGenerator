@@ -187,15 +187,15 @@ class MyApp(ShowBase):
 
             vertex = GeomVertexWriter(vdata, 'vertex')
 
-            vertex.addData3f(0, 1, 0) #0
-            vertex.addData3f(1, 1, 0) #1
-            vertex.addData3f(0, 0, 0) #2
-            vertex.addData3f(1, 0, 0) #3
+            vertex.addData3f(0, 1, 0) #0, UL
+            vertex.addData3f(1, 1, 0) #1, UR
+            vertex.addData3f(0, 0, 0) #2, BL
+            vertex.addData3f(1, 0, 0) #3, BR
 
-            vertex.addData3f(0, 1, 1) #4
-            vertex.addData3f(1, 1, 1) #5
-            vertex.addData3f(0, 0, 1) #6
-            vertex.addData3f(1, 0, 1) #7
+            vertex.addData3f(0, 1, 1) #4, UL
+            vertex.addData3f(1, 1, 1) #5, UR
+            vertex.addData3f(0, 0, 1) #6, BL
+            vertex.addData3f(1, 0, 1) #7, BR
 
             prim = GeomTriangles(Geom.UHStatic)
             #bottom
@@ -303,6 +303,10 @@ class BezierSpline:
         tangent.normalize()
         return tangent
         
+    def getRightNormal(self, t):
+        tangent = self.getTangent(t)
+        return Vec3(tangent.y, -tangent.x, 0.0)
+        
 class BezierCurve:
     def __init__(self, cp):
         self.splines = []
@@ -329,7 +333,20 @@ class BezierCurve:
 
     def getTangent(self, t):
         i = int(t)
-        return self.splines[i].getTangent(t - i)
+        i = max(min(i, len(self.splines) - 1), 0)
+        
+        if t > 0 and t < len(self.splines):
+            return self.splines[i].getTangent(t - i)
+        elif t < 0:
+            tangent = self.splines[0].getTangent(0)
+            return tangent
+        elif t > len(self.splines):
+            tangent = self.splines[-1].getTangent(1)
+            return tangent
+            
+    def getRightNormal(self, t):
+        tangent = self.getTangent(t)
+        return Vec3(tangent.y, -tangent.x, 0.0)
 
 
 app = MyApp()
