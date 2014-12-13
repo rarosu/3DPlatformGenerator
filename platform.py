@@ -72,8 +72,10 @@ class MyApp(ShowBase):
             cylinderNP.setPos(cylinderPos.getX(), cylinderPos.getY(), cylinderPos.getZ() + 1 )
             self.world.attachRigidBody(cylinderNode)
 
-
             self.makeCube()
+            
+            # Load a level
+            self.level = Level("Assets/Levels/test.level")
 
             # Setup tasks
             self.taskMgr.add(self.followCameraTask, "FollowCameraTask")
@@ -129,7 +131,7 @@ class MyApp(ShowBase):
 
 
         def followCameraTask(self, task):
-            radius = 10.0
+            radius = 20.0
             position = self.ralph.getPos(render)
             heading = self.ralph.getH(render) * (pi / 180.0) - pi * 0.5
             facing = Vec3(cos(heading), sin(heading), 0.0)
@@ -142,7 +144,7 @@ class MyApp(ShowBase):
 
         def physicsUpdate(self, task):
             dt = globalClock.getDt()
-
+            
             # Update the character movement
             speed = 0
             angularSpeed = 0
@@ -238,7 +240,96 @@ class MyApp(ShowBase):
             shapeNP.setPos(0, 0, 0)
             self.world.attachRigidBody(shapeNode)
 
+class Level:
+    def __init__(self, filepath):
+        file = open(filepath)
+        
+        s = file.readline().strip()
+        while s != "[Curve]":
+            s = file.readline().strip()
+        
+        curveString = ""
+        while s != "[Genotype]":
+            s = file.readline().strip()
+            if s != "[Genotype]":
+                curveString += s
+        
+        # Process the curve data now in curveString.
+        self.ProcessCurve(curveString)
+        
+        genotypeString = ""
+        while s != "":
+            s = file.readline().strip()
+            genotypeString += s
+            
+        # Process the genotype data now in genotypeString.
+        self.ProcessGenotype(genotypeString)
+    
+    def ProcessCurve(self, curveString):
+        comp = curveString.split(",")
+        cp = []
+        
+        for i in range(0, len(comp) - 3, 3):
+            #print("(%s, %s, %s)" % (comp[i], comp[i + 1], comp[i + 2]))
+            cp.append(Vec3(float(comp[i]), float(comp[i + 1]), float(comp[i + 2])))
+            
+        assert((len(cp) - 1) % 3 == 0)
+        self.curve = BezierCurve(cp)
+        
+    def ProcessGenotype(self, genotypeString):
+        pass
+            
+class BezierSpline:
+    # start, cp1, cp2 and end are type: panda3d.core.Vec3
+    def __init__(self, start, cp1, cp2, end):
+        self.start = start
+        self.cp1 = cp1
+        self.cp2 = cp2
+        self.end = end
+    
+    def getPoint(self, t):
+        it = 1 - t
+        
+        return (self.start * it * it * it +
+               self.cp1 * 3 * it * it * t +
+               self.cp2 * 3 * it * t * t +
+               self.end * t * t * t)
+    
+    def getTangent(self, t):
+        it = 1 - t
+        tangent = ((self.cp1 - self.start) * 3 * it * it +
+                  (self.cp2 - self.cp1) * 6 * it * t +
+                  (self.end - self.cp2) * 3 * t * t)
+        tangent.normalize()
+        return tangent
+        
+class BezierCurve:
+    def __init__(self, cp):
+        self.splines = []
+        
+        for i in range(0, len(cp) - 3, 3):
+            self.splines.append(BezierSpline(cp[i], cp[i + 1], cp[i + 2], cp[i + 3]))
 
+    def getPoint(self, t):
+        i = int(t)
+        i = max(min(i, len(self.splines) - 1), 0)
+        
+        if t > 0 and t < len(self.splines):
+            return self.splines[i].getPoint(t - i)
+        elif t < 0:
+            point = self.splines[0].getPoint(0)
+            tangent = self.splines[0].getTangent(0)
+            
+            return point + tangent * t
+        elif t > len(self.splines):
+            point = self.splines[-1].getPoint(1)
+            tangent = self.splines[-1].getTangent(1)
+            
+            return point + tangent * (t - i)
+
+    def getTangent(self, t):
+        i = int(t)
+        return self.splines[i].getTangent(t - i)
 
 
 app = MyApp()

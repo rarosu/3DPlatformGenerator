@@ -37,17 +37,17 @@ class ExportBezier(bpy.types.Operator, ExportHelper):
             for p in s.bezier_points:
                 if p == s.bezier_points[0]:
                     # Exclude left handle
-                    file.write("%.3f, %.3f, %.3f " % (p.co.x, p.co.y, p.co.z)) 
-                    file.write("%.3f, %.3f, %.3f " % (p.handle_right.x, p.handle_right.y,p.handle_right.z)) 
+                    file.write("%.3f, %.3f, %.3f, " % (p.co.x, p.co.y, p.co.z)) 
+                    file.write("%.3f, %.3f, %.3f, " % (p.handle_right.x, p.handle_right.y,p.handle_right.z)) 
                 elif p == s.bezier_points[-1]:
                     # Exclude right handle
-                    file.write("%.3f, %.3f, %.3f " % (p.handle_left.x, p.handle_left.y, p.handle_left.z)) 
-                    file.write("%.3f, %.3f, %.3f " % (p.co.x, p.co.y, p.co.z)) 
+                    file.write("%.3f, %.3f, %.3f, " % (p.handle_left.x, p.handle_left.y, p.handle_left.z)) 
+                    file.write("%.3f, %.3f, %.3f" % (p.co.x, p.co.y, p.co.z)) 
                 else:
                     # Include all control points                    
-                    file.write("%.3f, %.3f, %.3f\n" % (p.handle_left.x, p.handle_left.y, p.handle_left.z)) 
-                    file.write("%.3f, %.3f, %.3f " % (p.co.x, p.co.y, p.co.z)) 
-                    file.write("%.3f, %.3f, %.3f " % (p.handle_right.x, p.handle_right.y,p.handle_right.z))
+                    file.write("%.3f, %.3f, %.3f, \n" % (p.handle_left.x, p.handle_left.y, p.handle_left.z)) 
+                    file.write("%.3f, %.3f, %.3f, " % (p.co.x, p.co.y, p.co.z)) 
+                    file.write("%.3f, %.3f, %.3f, " % (p.handle_right.x, p.handle_right.y,p.handle_right.z))
                     
                     
         file.close()
