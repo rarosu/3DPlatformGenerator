@@ -73,9 +73,9 @@ class MyApp(ShowBase):
             #self.world.attachRigidBody(cylinderNode)
 
             #self.makeCube()
-            
+
             # Load a level
-            self.level = Level("Assets/Levels/test.level", self.world)
+            self.level = Level("Assets/Levels/generated.level", self.world)
             self.level.CreateLevelGeometry()
 
             # Setup tasks
@@ -145,7 +145,7 @@ class MyApp(ShowBase):
 
         def physicsUpdate(self, task):
             dt = globalClock.getDt()
-            
+
             # Update the character movement
             c_speed = 5.0
             speed = 0
@@ -248,56 +248,56 @@ class Level:
         self.blockWidth = 4
         self.blockHeight = 1.5
         self.ground_z = 1
-        
+
         self.bulletworld = bulletworld
-    
+
         file = open(filepath)
-        
+
         s = file.readline().strip()
         while s != "[Curve]":
             s = file.readline().strip()
-        
+
         curveString = ""
         while s != "[Genotype]":
             s = file.readline().strip()
             if s != "[Genotype]":
                 curveString += s
-        
+
         # Process the curve data now in curveString.
         self.ProcessCurve(curveString)
-        
+
         genotypeString = ""
         while s != "":
             s = file.readline().strip()
             genotypeString += s
-            
+
         # Process the genotype data now in genotypeString.
         self.ProcessGenotype(genotypeString)
-    
+
     def ProcessCurve(self, curveString):
         comp = curveString.split(",")
         cp = []
-        
+
         for i in range(0, len(comp) - 3, 3):
             #print("(%s, %s, %s)" % (comp[i], comp[i + 1], comp[i + 2]))
             cp.append(Vec3(float(comp[i]), float(comp[i + 1]), float(comp[i + 2])))
-            
+
         assert((len(cp) - 1) % 3 == 0)
         self.curve = BezierCurve(cp)
-        
+
     def ProcessGenotype(self, genotypeString):
         self.genotype = []
-        
+
         for c in genotypeString:
             self.genotype.append(int(c, 16))
-        
+
     def CreateLevelGeometry(self):
         t = 0
-        
+
         for allele in self.genotype:
             # Find the next t where the blocks will end.
             next_t = self.StepToNextBlock(t)
-            
+
             # Create the blocks needed for the current allele.
             if allele == 0:
                 pass
@@ -351,23 +351,23 @@ class Level:
             elif allele == 0xF:
                 self.CreateBlock(t, next_t, self.ground_z + 2 * self.blockHeight)
                 self.CreateBlock(t, next_t, self.ground_z + 4 * self.blockHeight)
-                
+
             t = next_t
-            
+
     def StepToNextBlock(self, t):
         ct = t
         dt = 0.01
         length = 0
-        
+
         while length < self.blockLength:
             v1 = self.curve.getPoint(ct)
             v2 = self.curve.getPoint(ct + dt)
-            
+
             length += (v2 - v1).length()
             ct += dt
-        
+
         return ct
-        
+
     def CreateBlock(self, start_t, end_t, start_z):
         array = GeomVertexArrayFormat()
         array.addColumn(InternalName.make('vertex'), 3, Geom.NTFloat32, Geom.CPoint)
@@ -393,7 +393,7 @@ class Level:
         BR = BNormal * self.blockWidth *  0.5 + BPos
         LowerZ = Vec3(0, 0, start_z)
         HigherZ = Vec3(0, 0, start_z + self.blockHeight)
-        
+
         NormalBottom = Vec3.down()
         NormalTop = Vec3.up()
         NormalLeft = Vec3.up().cross(UL - BL)
@@ -404,7 +404,7 @@ class Level:
         NormalRight.normalize()
         NormalFront.normalize()
         NormalBack.normalize()
-        
+
         LULNormal = NormalBack + NormalBottom + NormalLeft # Back, bottom and left.
         LURNormal = NormalBack + NormalBottom + NormalRight # Back, bottom, right
         LBLNormal = NormalFront + NormalBottom + NormalLeft # Front, bottom, left
@@ -413,7 +413,7 @@ class Level:
         TURNormal = NormalBack + NormalTop + NormalRight # Back, top, right
         TBLNormal = NormalFront + NormalTop + NormalLeft # Front, top, left
         TBRNormal = NormalFront + NormalTop + NormalRight # Front, top, right
-        
+
         LULNormal.normalize()
         LURNormal.normalize()
         LBLNormal.normalize()
@@ -422,7 +422,7 @@ class Level:
         TURNormal.normalize()
         TBLNormal.normalize()
         TBRNormal.normalize()
-        
+
         vertex.addData3f(UL + LowerZ) #0, UL
         vertex.addData3f(UR + LowerZ) #1, UR
         vertex.addData3f(BL + LowerZ) #2, BL
@@ -432,17 +432,17 @@ class Level:
         vertex.addData3f(UR + HigherZ) #5, UR
         vertex.addData3f(BL + HigherZ) #6, BL
         vertex.addData3f(BR + HigherZ) #7, BR
-        
+
         normal.addData3f(LULNormal)
         normal.addData3f(LURNormal)
         normal.addData3f(LBLNormal)
         normal.addData3f(LBRNormal)
-        
+
         normal.addData3f(TULNormal)
         normal.addData3f(TURNormal)
         normal.addData3f(TBLNormal)
         normal.addData3f(TBRNormal)
-        
+
         prim = GeomTriangles(Geom.UHStatic)
         #bottom
         prim.addVertices(1, 2, 0)
@@ -462,7 +462,7 @@ class Level:
         #right
         prim.addVertices(5, 3, 1)
         prim.addVertices(7, 3, 5)
-        
+
         geom = Geom(vdata)
         geom.addPrimitive(prim)
 
@@ -478,7 +478,7 @@ class Level:
         shapeNP = render.attachNewNode(shapeNode)
         shapeNP.setPos(0, 0, 0)
         self.bulletworld.attachRigidBody(shapeNode)
-        
+
 class BezierSpline:
     # start, cp1, cp2 and end are type: panda3d.core.Vec3
     def __init__(self, start, cp1, cp2, end):
@@ -486,15 +486,15 @@ class BezierSpline:
         self.cp1 = cp1
         self.cp2 = cp2
         self.end = end
-    
+
     def getPoint(self, t):
         it = 1 - t
-        
+
         return (self.start * it * it * it +
                self.cp1 * 3 * it * it * t +
                self.cp2 * 3 * it * t * t +
                self.end * t * t * t)
-    
+
     def getTangent(self, t):
         it = 1 - t
         tangent = ((self.cp1 - self.start) * 3 * it * it +
@@ -502,39 +502,39 @@ class BezierSpline:
                   (self.end - self.cp2) * 3 * t * t)
         tangent.normalize()
         return tangent
-        
+
     def getRightNormal(self, t):
         tangent = self.getTangent(t)
         return Vec3(tangent.y, -tangent.x, 0.0)
-        
+
 class BezierCurve:
     def __init__(self, cp):
         self.splines = []
-        
+
         for i in range(0, len(cp) - 3, 3):
             self.splines.append(BezierSpline(cp[i], cp[i + 1], cp[i + 2], cp[i + 3]))
 
     def getPoint(self, t):
         i = int(t)
         i = max(min(i, len(self.splines) - 1), 0)
-        
+
         if t >= 0 and t < len(self.splines):
             return self.splines[i].getPoint(t - i)
         elif t < 0:
             point = self.splines[0].getPoint(0)
             tangent = self.splines[0].getTangent(0)
-            
+
             return point + tangent * t
         elif t > len(self.splines):
             point = self.splines[-1].getPoint(1)
             tangent = self.splines[-1].getTangent(1)
-            
+
             return point + tangent * (t - i)
 
     def getTangent(self, t):
         i = int(t)
         i = max(min(i, len(self.splines) - 1), 0)
-        
+
         if t >= 0 and t < len(self.splines):
             return self.splines[i].getTangent(t - i)
         elif t < 0:
@@ -543,7 +543,7 @@ class BezierCurve:
         elif t > len(self.splines):
             tangent = self.splines[-1].getTangent(1)
             return tangent
-            
+
     def getRightNormal(self, t):
         tangent = self.getTangent(t)
         return Vec3(tangent.y, -tangent.x, 0.0)

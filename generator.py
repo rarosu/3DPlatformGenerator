@@ -1,22 +1,29 @@
 import re
 import random
+from math import sqrt
 
 test_chromosome = "113113114188141777116CC611012345101011111111311141100012030405543211123451154321112345005432111111166611"
 
-weight_valley = 2
-weight_roof_valley = 4
-weight_two_path = 6
-weight_three_path = 6
-weight_gaps = 2
-weight_variable_gaps = 4
-weight_multiple_gaps = 6
-weight_pillar_gaps = 10
-weight_stair_up = 1
-weight_stair_down = 1
-weight_empty_stair_valley = 1
-weight_gap_stair_valley = 1
-weight_unplayable = -100
-mutation_prob = 100
+weights = {"Valley" : 2,
+           "Roof Valley" : 4,
+           "Two Path" : 6,
+           "Three Path" : 6,
+           "Gaps" : 2,
+           "Variable Gaps" : 4,
+           "Multiple Gaps" : 6,
+           "Pillar Gaps" : 10,
+           "Stair Up" : 1,
+           "Stair Down" : 1,
+           "Empty Stair Valley" : 1,
+           "Gap Stair Valley" : 1,
+           "Unplayable" : -100,
+           "Respite" : 15}
+
+mutation_prob = 50
+mutation_count = 10
+population_size = 200
+generation_count = 1000
+fresh_count = 10
 
 def ScanChromosome(chromosome):
     valley_re = re.compile("[2345]1{1,5}(?=[2345])")
@@ -65,6 +72,8 @@ def ScanChromosome(chromosome):
     unplayable_re_2 = re.compile("[01]{4,}[45]")
     unplayable_re_3 = re.compile("[012]{4,}5")
 
+    respite_re = re.compile("1{3,}")
+
     #print(unplayable_re_1.findall(chromosome))
     #print(unplayable_re_2.findall(chromosome))
     #print(unplayable_re_3.findall(chromosome))
@@ -81,26 +90,20 @@ def ScanChromosome(chromosome):
              "Stair Down" : len(stair_down_re.findall(chromosome)),
              "Empty Stair Valley" : len(empty_stair_valley_re.findall(chromosome)),
              "Gap Stair Valley" : len(gap_stair_valley_re.findall(chromosome)),
-             "Unplayable" : len(unplayable_re_1.findall(chromosome)) + len(unplayable_re_2.findall(chromosome)) + len(unplayable_re_3.findall(chromosome))}
+             "Unplayable" : len(unplayable_re_1.findall(chromosome)) + len(unplayable_re_2.findall(chromosome)) + len(unplayable_re_3.findall(chromosome)),
+             "Respite" : len(respite_re.findall(chromosome))}
 
 def Fitness(chromosome):
     pattern_count = ScanChromosome(chromosome)
 
     fitness = 0
+    for key in pattern_count:
+        if pattern_count[key] > 0:
+            fitness += (weights[key] * 2 - pattern_count[key] * 0.1)
+        #if key != "Unplayable" and pattern_count[key] == 0:
+        #    fitness -= 20
 
-    fitness += pattern_count["Valley"] * weight_valley
-    fitness += pattern_count["Roof Valley"] * weight_roof_valley
-    fitness += pattern_count["Two Path"] * weight_two_path
-    fitness += pattern_count["Three Path"] * weight_three_path
-    fitness += pattern_count["Gaps"] * weight_gaps
-    fitness += pattern_count["Variable Gaps"] * weight_variable_gaps
-    fitness += pattern_count["Multiple Gaps"] * weight_multiple_gaps
-    fitness += pattern_count["Pillar Gaps"] * weight_pillar_gaps
-    fitness += pattern_count["Stair Up"] * weight_stair_up
-    fitness += pattern_count["Stair Down"] * weight_stair_down
-    fitness += pattern_count["Empty Stair Valley"] * weight_empty_stair_valley
-    fitness += pattern_count["Gap Stair Valley"] * weight_gap_stair_valley
-    fitness += pattern_count["Unplayable"] * weight_unplayable
+
 
     return fitness
 
@@ -110,6 +113,9 @@ def RandomChromosome():
         s += "%X" % random.randint(0,15)
 
     return s
+
+def FlatChromosome():
+    return "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
 
 def Crossover(chr1, chr2):
     #convert to bitstrings
@@ -129,12 +135,12 @@ def Crossover(chr1, chr2):
     #mutate kids
     for kid in kids:
         if random.randint(1, 100) <= mutation_prob:
-            mut = random.randint(0, len(kid) - 1)
-            if kid[mut] == '0':
-                kid = kid[0:mut] + '1' + kid[mut + 1:]
-            #    kid[mut] = '1'
-            else:
-                kid = kid[0:mut] + '0' + kid[mut + 1:]
+            for i in range(mutation_count):
+                mut = random.randint(0, len(kid) - 1)
+                if kid[mut] == '0':
+                    kid = kid[0:mut] + '1' + kid[mut + 1:]
+                else:
+                    kid = kid[0:mut] + '0' + kid[mut + 1:]
     hexkids = ["",""]
     assert(len(kids[0]) == len(kids[1]))
     for i in range(0, len(kids[0]), 4):
@@ -143,10 +149,46 @@ def Crossover(chr1, chr2):
 
     return hexkids
 
-if __name__ == "__main__":
-   pattern_count = ScanChromosome(test_chromosome)
-   fitness = Fitness(pattern_count)
+def EvolvePopulation(population):
 
-   print(pattern_count)
-   print(fitness)
-   print(Crossover(RandomChromosome(), RandomChromosome()))
+    new_pop = []
+    for i in range(population_size / 2): # - fresh_count):
+        new_pop.append(population[i])
+        kids = Crossover(population[random.randint(0, (population_size / 2) - 1)],
+                         population[random.randint(0, (population_size / 2) - 1)])
+        new_pop.append(kids[0])
+        new_pop.append(kids[1])
+
+    #for i in range(fresh_count):
+    #    new_pop.append(RandomChromosome())
+
+    return new_pop
+
+if __name__ == "__main__":
+    population = []
+    for i in range(population_size):
+        population.append(RandomChromosome())
+
+    population.sort(key = Fitness, reverse = True)
+
+    for i in range(generation_count):
+        population = EvolvePopulation(population)
+        population.sort(key = Fitness, reverse = True)
+        if i % 100 == 0:
+            print("Generation %d complete with highest fitness: %d" %(i, Fitness(population[0])))
+
+    print("Winning fitness: %d" % Fitness(population[0]))
+    print(ScanChromosome(population[0]))
+    f = open("Assets/Levels/winner.txt", 'w')
+    f.write(population[0])
+    f.close()
+
+
+
+
+    #pattern_count = ScanChromosome(test_chromosome)
+    #fitness = Fitness(pattern_count)
+
+    #print(pattern_count)
+    #print(fitness)
+    #print(Crossover(RandomChromosome(), RandomChromosome()))
