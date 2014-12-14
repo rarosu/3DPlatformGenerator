@@ -16,6 +16,7 @@ weight_stair_down = 1
 weight_empty_stair_valley = 1
 weight_gap_stair_valley = 1
 weight_unplayable = -100
+mutation_prob = 100
 
 def ScanChromosome(chromosome):
     valley_re = re.compile("[2345]1{1,5}(?=[2345])")
@@ -82,7 +83,9 @@ def ScanChromosome(chromosome):
              "Gap Stair Valley" : len(gap_stair_valley_re.findall(chromosome)),
              "Unplayable" : len(unplayable_re_1.findall(chromosome)) + len(unplayable_re_2.findall(chromosome)) + len(unplayable_re_3.findall(chromosome))}
 
-def Fitness(pattern_count):
+def Fitness(chromosome):
+    pattern_count = ScanChromosome(chromosome)
+
     fitness = 0
 
     fitness += pattern_count["Valley"] * weight_valley
@@ -108,9 +111,42 @@ def RandomChromosome():
 
     return s
 
+def Crossover(chr1, chr2):
+    #convert to bitstrings
+    bitc1 = ""
+    bitc2 = ""
+    for i in range(len(chr1)):
+        bitc1 += "{0:0>4b}".format(int(chr1[i], 16))
+        bitc2 += "{0:0>4b}".format(int(chr2[i], 16))
+    assert(len(chr1) == len(chr2))
+    assert(len(bitc1) == len(bitc2))
+    #do cutoff
+    cutoff = random.randint(0, len(bitc1) - 1)
+    kids = []
+    kids.append(bitc1[0:cutoff] + bitc2[cutoff:])
+    kids.append(bitc2[0:cutoff] + bitc1[cutoff:])
+    #print(kids)
+    #mutate kids
+    for kid in kids:
+        if random.randint(1, 100) <= mutation_prob:
+            mut = random.randint(0, len(kid) - 1)
+            if kid[mut] == '0':
+                kid = kid[0:mut] + '1' + kid[mut + 1:]
+            #    kid[mut] = '1'
+            else:
+                kid = kid[0:mut] + '0' + kid[mut + 1:]
+    hexkids = ["",""]
+    assert(len(kids[0]) == len(kids[1]))
+    for i in range(0, len(kids[0]), 4):
+        hexkids[0] += "%X" % (int(kids[0][i:i + 4], 2))
+        hexkids[1] += "%X" % (int(kids[1][i:i + 4], 2))
+
+    return hexkids
+
 if __name__ == "__main__":
    pattern_count = ScanChromosome(test_chromosome)
    fitness = Fitness(pattern_count)
 
    print(pattern_count)
    print(fitness)
+   print(Crossover(RandomChromosome(), RandomChromosome()))
