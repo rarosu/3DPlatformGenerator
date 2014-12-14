@@ -19,8 +19,8 @@ weights = {"Valley" : 2,
            "Unplayable" : -100,
            "Respite" : 15}
 
-mutation_prob = 50
-mutation_count = 10
+mutation_prob = 100
+mutation_count = 1
 population_size = 200
 generation_count = 100
 fresh_count = 10
@@ -127,7 +127,7 @@ def Crossover(chr1, chr2):
     assert(len(chr1) == len(chr2))
     assert(len(bitc1) == len(bitc2))
     #do cutoff
-    cutoff = random.randint(0, len(bitc1) - 1)
+    cutoff = len(bitc1) / 2 #random.randint(0, len(bitc1) - 1)
     kids = []
     kids.append(bitc1[0:cutoff] + bitc2[cutoff:])
     kids.append(bitc2[0:cutoff] + bitc1[cutoff:])
