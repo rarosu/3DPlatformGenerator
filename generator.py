@@ -1,164 +1,108 @@
 import re
 
-test_chromosome = "113113114188141777116CC6110123451010111111113111411000120304055432111234511543211123450054321"
+test_chromosome = "113113114188141777116CC611012345101011111111311141100012030405543211123451154321112345005432111111166611"
 
-valley_max_length = 5
+weight_valley = 2
+weight_roof_valley = 4
+weight_two_path = 6
+weight_three_path = 6
+weight_gaps = 2
+weight_variable_gaps = 4
+weight_multiple_gaps = 6
+weight_pillar_gaps = 10
+weight_stair_up = 1
+weight_stair_down = 1
+weight_empty_stair_valley = 1
+weight_gap_stair_valley = 1
+weight_unplayable = -100
 
 def ScanChromosome(chromosome):
     valley_re = re.compile("[2345]1{1,5}(?=[2345])")
-    print(valley_re.findall(chromosome))
+    #print(valley_re.findall(chromosome))
     
     roof_valley_re_1 = re.compile("[23]16{1,5}1(?=[23])")
-    print(roof_valley_re_1.findall(chromosome))
+    #print(roof_valley_re_1.findall(chromosome))
     
     roof_valley_re_2 = re.compile("(?:2|[234]1)(?:7{1,5})(?=(?:[2|1[234]))")
-    print(roof_valley_re_2.findall(chromosome))
+    #print(roof_valley_re_2.findall(chromosome))
     
     roof_valley_re_3 = re.compile("(?:[23]1?|[45]1)(?:8{1,5})(?=(?:1?[23]|1[45]))")
-    print(roof_valley_re_3.findall(chromosome))
-    
-    two_path_re = re.compile("[01]{2}[67]+[01]{2}")
-    print(two_path_re.findall(chromosome))
-    
-    three_path_re = re.compile("[01]{2}6+[01]?[CF]+[01]?6*[01]{2}")
-    print(three_path_re.findall(chromosome))
-    
-    
-    #
-    #
-    #roof_valley_re_3 = re.compile("2|3|(21)|(31)|(41)8{1,5}2|3|(12)|(13)|(14)")
     #print(roof_valley_re_3.findall(chromosome))
     
+    two_path_re = re.compile("[01]{2}[67]+[01]{2}")
+    #print(two_path_re.findall(chromosome))
     
-    #valley = ScanValley(chromosome)
-    #print(valley)
-    #roof_valley = ScanRoofValleys(chromosome)
-    #path2 = Scan2Paths(chromosome)
-    #path3 = Scan3Paths(chromosome)
-    #gaps = ScanGaps(chromosome)
-    # ...
-
-#def ScanValley(chromosome):
-#    count = 0
-#    length = -1
-#    for allele in chromosome:
-#        if length == -1:
-#            if (allele == 2 or
-#                allele == 3 or
-#                allele == 4 or
-#                allele == 5):
-#                length = 0
-#        else:
-#            # Check for an end of the valley
-#            if (allele == 2 or
-#                allele == 3 or
-#                allele == 4 or
-#                allele == 5):
-#                if length > 0 and length <= valley_max_length:
-#                    count += 1
-#                
-#                # Start searching for a new valley...
-#                length = 0
-#            # Check for allowable intermediate valley alleles
-#            elif (allele == 1 or
-#                  allele == 0xB):
-#                  length += 1
-#            # Abort the valley check if no end is in sight...
-#            else:
-#                length = -1
-#    return count
-#    
-#def ScanRoofValley(chromosome):
-#    count = 0
-#    length = -1
-#    roof_allele = -1
-#    empty_bordered_roof = False
-#    
-#    for i in range(len(chromosome)):
-#        if length == -1 and len(chromosome) - i >= 3:
-#            if chromosome[i] == 2:
-#                if chromosome[i + 1] == 1:
-#                    if chromosome[i + 2] == 6:
-#                        roof_allele = 6
-#                        length = 0
-#                        empty_bordered_roof = True
-#                    if chromosome[i + 2] == 7:
-#                        roof_allele = 7
-#                        length = 0
-#                        empty_bordered_roof = True
-#                    if chromosome[i + 2] == 8:
-#                        roof_allele = 8
-#                        length = 0
-#                        empty_bordered_roof = True
-#                if chromosome[i + 1] == 7:
-#                    roof_allele = 7
-#                    length = 0
-#                if chromosome[i + 1] == 8:
-#                    roof_allele = 8
-#                    length = 0
-#            if chromosome[i] == 3:
-#                if chromosome[i + 1] == 1:
-#                    if chromosome[i + 2] == 6:
-#                        roof_allele = 6
-#                        length = 0
-#                        empty_bordered_roof = True
-#                    if chromosome[i + 2] == 7:
-#                        roof_allele = 7
-#                        length = 0
-#                        empty_bordered_roof = True
-#                    if chromosome[i + 2] == 8:
-#                        roof_allele = 8
-#                        length = 0
-#                        empty_bordered_roof = True
-#                if chromosome[i + 1] == 8:
-#                    roof_allele = 8
-#                    length = 0
-#            if chromosome[i] == 4:
-#                if chromosome[i + 1] == 1:
-#                    if chromosome[i + 2] == 7:
-#                        roof_allele = 7
-#                        length = 0
-#                        empty_bordered_roof = True
-#                    if chromosome[i + 2] == 8:
-#                        roof_allele = 8
-#                        length = 0
-#                        empty_bordered_roof = True
-#            if chromosome[i] == 5:
-#                if chromosome[i + 1] == 1:
-#                        if chromosome[i + 2] == 8:
-#                            roof_allele = 8
-#                            length = 0
-#                            empty_bordered_roof = True
-#        else:
-#            if length == 0:
-#                length += 1
-#            if length == 1:
-#                if empty_bordered_roof:
-#                    length += 1
-#                else:
-#                    if chromosome[i] == roof_allele and length <= valley_max_length:
-#                        length += 1
-#                    else:
-#                        length = -1
-
-        
-if __name__ == "__main__":
-    #s = "aaaabbaaaaabfkaaakaaka"
-    #f = "aa"
-    #p = re.compile("[a]{3,6}")
-    #print(p.findall(s))
-    #print(p.findall(f))
+    three_path_re = re.compile("[01]{2}6+[01]?[CF]+[01]?6*[01]{2}")
+    #print(three_path_re.findall(chromosome))
     
-    #s = "5111561116"
-    #
-    #s1 = "ab"
-    #s2 = "ac"
-    #f = "ad"
-    #
-    #r = re.compile("[56]1{1,5}[56]")
-    #print(r.findall(s))
-    #print(r.findall(s2))
-    #print(r.findall(f))
+    gaps_re = re.compile("[^09ABF]{2}[09ABF](?=[^09ABF]{2})")
+    #print(gaps_re.findall(chromosome))
+    
+    variable_gaps_re = re.compile("[^09ABF]{2}[09ABF]{2,3}(?=[^09ABF]{2})")
+    #print(variable_gaps_re.findall(chromosome))
+    
+    multiple_gaps_re = re.compile("(?:[178E][09ABF](?=[178E])){2,}")
+    #print(multiple_gaps_re.findall(chromosome))
+    
+    pillar_gaps_re = re.compile("[2345]0{1,3}(?=[2345])")
+    #print(pillar_gaps_re.findall(chromosome))
+    
+    stair_up_re = re.compile("1?2345?")
+    #print(stair_up_re.findall(chromosome))
+    
+    stair_down_re = re.compile("5?4321?")
+    #print(stair_down_re.findall(chromosome))
+    
+    empty_stair_valley_re = re.compile("1?2345?1{1,3}5?4321?")
+    #print(empty_stair_valley_re.findall(chromosome))
+    
+    gap_stair_valley_re = re.compile("1?2345?0{1,3}5?4321?")
+    #print(gap_stair_valley_re.findall(chromosome))
+    
+    unplayable_re_1 = re.compile("0{4,}")
+    unplayable_re_2 = re.compile("[01]{4,}[45]")
+    unplayable_re_3 = re.compile("[012]{4,}5")
+    
+    #print(unplayable_re_1.findall(chromosome))
+    #print(unplayable_re_2.findall(chromosome))
+    #print(unplayable_re_3.findall(chromosome))
+    
+    return { "Valley" : len(valley_re.findall(chromosome)),
+             "Roof Valley" : len(roof_valley_re_1.findall(chromosome)) + len(roof_valley_re_2.findall(chromosome)) + len(roof_valley_re_3.findall(chromosome)),
+             "Two Path" : len(two_path_re.findall(chromosome)),
+             "Three Path" : len(three_path_re.findall(chromosome)),
+             "Gaps" : len(gaps_re.findall(chromosome)),
+             "Variable Gaps" : len(variable_gaps_re.findall(chromosome)),
+             "Multiple Gaps" : len(multiple_gaps_re.findall(chromosome)),
+             "Pillar Gaps" : len(pillar_gaps_re.findall(chromosome)),
+             "Stair Up" : len(stair_up_re.findall(chromosome)),
+             "Stair Down" : len(stair_down_re.findall(chromosome)),
+             "Empty Stair Valley" : len(empty_stair_valley_re.findall(chromosome)),
+             "Gap Stair Valley" : len(gap_stair_valley_re.findall(chromosome)),
+             "Unplayable" : len(unplayable_re_1.findall(chromosome)) + len(unplayable_re_2.findall(chromosome)) + len(unplayable_re_3.findall(chromosome))}
 
-      
-   ScanChromosome(test_chromosome)
+def Fitness(pattern_count):
+    fitness = 0
+    
+    fitness += pattern_count["Valley"] * weight_valley
+    fitness += pattern_count["Roof Valley"] * weight_roof_valley
+    fitness += pattern_count["Two Path"] * weight_two_path
+    fitness += pattern_count["Three Path"] * weight_three_path
+    fitness += pattern_count["Gaps"] * weight_gaps
+    fitness += pattern_count["Variable Gaps"] * weight_variable_gaps
+    fitness += pattern_count["Multiple Gaps"] * weight_multiple_gaps
+    fitness += pattern_count["Pillar Gaps"] * weight_pillar_gaps
+    fitness += pattern_count["Stair Up"] * weight_stair_up
+    fitness += pattern_count["Stair Down"] * weight_stair_down
+    fitness += pattern_count["Empty Stair Valley"] * weight_empty_stair_valley
+    fitness += pattern_count["Gap Stair Valley"] * weight_gap_stair_valley
+    fitness += pattern_count["Unplayable"] * weight_unplayable
+    
+    return fitness
+    
+if __name__ == "__main__":    
+   pattern_count = ScanChromosome(test_chromosome)
+   fitness = Fitness(pattern_count)
+   
+   print(pattern_count)
+   print(fitness)
