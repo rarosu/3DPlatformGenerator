@@ -22,7 +22,7 @@ weights = {"Valley" : 2,
 mutation_prob = 50
 mutation_count = 10
 population_size = 200
-generation_count = 1000
+generation_count = 100
 fresh_count = 10
 
 def ScanChromosome(chromosome):
@@ -152,10 +152,11 @@ def Crossover(chr1, chr2):
 def EvolvePopulation(population):
 
     new_pop = []
-    for i in range(population_size / 2): # - fresh_count):
+    for i in range(0, population_size / 2, 2): # - fresh_count):
         new_pop.append(population[i])
-        kids = Crossover(population[random.randint(0, (population_size / 2) - 1)],
-                         population[random.randint(0, (population_size / 2) - 1)])
+        new_pop.append(population[i + 1])
+        kids = Crossover(population[i],
+                         population[i + 1])
         new_pop.append(kids[0])
         new_pop.append(kids[1])
 
