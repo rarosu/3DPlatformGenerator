@@ -57,22 +57,22 @@ class MyApp(ShowBase):
             self.world.attachCharacter(self.playerNode)
 
             # Setup non-physical objects
-            self.cylinder = self.loader.loadModel("Assets/Models/Cylinder")
-            self.cylinder.reparentTo(self.render)
-            self.cylinder.setPos(-2, 2, 0)
-            self.cylinder.setScale(1, 1, 1)
+            #self.cylinder = self.loader.loadModel("Assets/Models/Cylinder")
+            #self.cylinder.reparentTo(self.render)
+            #self.cylinder.setPos(-2, 2, 0)
+            #self.cylinder.setScale(1, 1, 1)
+            #
+            #cylinderPos = self.cylinder.getPos()
+            #cylinderGeom = self.cylinder.findAllMatches("**/+GeomNode").getPath(0).node().getGeom(0)
+            #cylinderShape = BulletConvexHullShape()
+            #cylinderShape.addGeom(cylinderGeom)
+            #cylinderNode = BulletRigidBodyNode("Cylinder")
+            #cylinderNode.addShape(cylinderShape)
+            #cylinderNP = render.attachNewNode(cylinderNode)
+            #cylinderNP.setPos(cylinderPos.getX(), cylinderPos.getY(), cylinderPos.getZ() + 1 )
+            #self.world.attachRigidBody(cylinderNode)
 
-            cylinderPos = self.cylinder.getPos()
-            cylinderGeom = self.cylinder.findAllMatches("**/+GeomNode").getPath(0).node().getGeom(0)
-            cylinderShape = BulletConvexHullShape()
-            cylinderShape.addGeom(cylinderGeom)
-            cylinderNode = BulletRigidBodyNode("Cylinder")
-            cylinderNode.addShape(cylinderShape)
-            cylinderNP = render.attachNewNode(cylinderNode)
-            cylinderNP.setPos(cylinderPos.getX(), cylinderPos.getY(), cylinderPos.getZ() + 1 )
-            self.world.attachRigidBody(cylinderNode)
-
-            self.makeCube()
+            #self.makeCube()
             
             # Load a level
             self.level = Level("Assets/Levels/test.level", self.world)
@@ -371,6 +371,7 @@ class Level:
     def CreateBlock(self, start_t, end_t, start_z):
         array = GeomVertexArrayFormat()
         array.addColumn(InternalName.make('vertex'), 3, Geom.NTFloat32, Geom.CPoint)
+        array.addColumn(InternalName.make('normal'), 3, Geom.NTFloat32, Geom.CVector)
 
         format = GeomVertexFormat()
         format.addArray(array)
@@ -380,6 +381,7 @@ class Level:
         vdata.setNumRows(8)
 
         vertex = GeomVertexWriter(vdata, 'vertex')
+        normal = GeomVertexWriter(vdata, 'normal')
 
         BNormal = self.curve.getRightNormal(start_t)
         UNormal = self.curve.getRightNormal(end_t)
@@ -392,6 +394,35 @@ class Level:
         LowerZ = Vec3(0, 0, start_z)
         HigherZ = Vec3(0, 0, start_z + self.blockHeight)
         
+        NormalBottom = Vec3.down()
+        NormalTop = Vec3.up()
+        NormalLeft = Vec3.up().cross(UL - BL)
+        NormalRight = (UR - BR).cross(Vec3.up())
+        NormalFront = (BR - BL).cross(Vec3.up())
+        NormalBack = (UR - UR).cross(Vec3.up())
+        NormalLeft.normalize()
+        NormalRight.normalize()
+        NormalFront.normalize()
+        NormalBack.normalize()
+        
+        LULNormal = NormalBack + NormalBottom + NormalLeft # Back, bottom and left.
+        LURNormal = NormalBack + NormalBottom + NormalRight # Back, bottom, right
+        LBLNormal = NormalFront + NormalBottom + NormalLeft # Front, bottom, left
+        LBRNormal = NormalFront + NormalBottom + NormalRight # Front, bottom, right
+        TULNormal = NormalBack + NormalTop + NormalLeft # Back, top, left
+        TURNormal = NormalBack + NormalTop + NormalRight # Back, top, right
+        TBLNormal = NormalFront + NormalTop + NormalLeft # Front, top, left
+        TBRNormal = NormalFront + NormalTop + NormalRight # Front, top, right
+        
+        LULNormal.normalize()
+        LURNormal.normalize()
+        LBLNormal.normalize()
+        LBRNormal.normalize()
+        TULNormal.normalize()
+        TURNormal.normalize()
+        TBLNormal.normalize()
+        TBRNormal.normalize()
+        
         vertex.addData3f(UL + LowerZ) #0, UL
         vertex.addData3f(UR + LowerZ) #1, UR
         vertex.addData3f(BL + LowerZ) #2, BL
@@ -401,6 +432,16 @@ class Level:
         vertex.addData3f(UR + HigherZ) #5, UR
         vertex.addData3f(BL + HigherZ) #6, BL
         vertex.addData3f(BR + HigherZ) #7, BR
+        
+        normal.addData3f(LULNormal)
+        normal.addData3f(LURNormal)
+        normal.addData3f(LBLNormal)
+        normal.addData3f(LBRNormal)
+        
+        normal.addData3f(TULNormal)
+        normal.addData3f(TURNormal)
+        normal.addData3f(TBLNormal)
+        normal.addData3f(TBRNormal)
         
         prim = GeomTriangles(Geom.UHStatic)
         #bottom
