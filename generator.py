@@ -17,7 +17,9 @@ weights = {"Valley" : 2,
            "Empty Stair Valley" : 1,
            "Gap Stair Valley" : 1,
            "Unplayable" : -100,
-           "Respite" : 15}
+           "Respite" : 15,
+           "Repeated" : -10,
+           "Beginnings" : 5}
 
 mutation_prob = 100
 mutation_count = 1
@@ -27,71 +29,127 @@ fresh_count = 10
 
 def ScanChromosome(chromosome):
     valley_re = re.compile("[2345]1{1,5}(?=[2345])")
+    start_re = re.compile("[2345]1")
+    repeated = len(re.compile("(?:[2345]1){2,}").findall(chromosome))
+    valleys = len(valley_re.findall(chromosome))
+    beginning = len(start_re.findall(chromosome))
     #print(valley_re.findall(chromosome))
 
     roof_valley_re_1 = re.compile("[23]16{1,5}1(?=[23])")
+    start_re = re.compile("[23]16")
+    repeated += len(re.compile("(?:[23]16){2,}").findall(chromosome))
+    roof_valleys = len(roof_valley_re_1.findall(chromosome))
+    beginning += len(start_re.findall(chromosome))
     #print(roof_valley_re_1.findall(chromosome))
 
     roof_valley_re_2 = re.compile("(?:2|[234]1)(?:7{1,5})(?=(?:[2|1[234]))")
+    start_re = re.compile("(?:2|[234]1)7")
+    repeated += len(re.compile("(?:(?:2|[234]1)7){2,}").findall(chromosome))
+    roof_valleys += len(roof_valley_re_2.findall(chromosome))
+    beginning += len(start_re.findall(chromosome))
     #print(roof_valley_re_2.findall(chromosome))
 
     roof_valley_re_3 = re.compile("(?:[23]1?|[45]1)(?:8{1,5})(?=(?:1?[23]|1[45]))")
+    start_re = re.compile("(?:[23]1?|[45]1)8")
+    repeated += len(re.compile("(?:(?:[23]1?|[45]1)8){2,}").findall(chromosome))
+    roof_valleys += len(roof_valley_re_3.findall(chromosome))
+    beginning += len(start_re.findall(chromosome))
     #print(roof_valley_re_3.findall(chromosome))
 
     two_path_re = re.compile("[01]{2}[67]+[01]{2}")
+    start_re = re.compile("[01]{2}[67]")
+    repeated += len(re.compile("(?:[01]{2}[67]){2,}").findall(chromosome))
+    two_paths = len(two_path_re.findall(chromosome))
+    beginning += len(start_re.findall(chromosome))
     #print(two_path_re.findall(chromosome))
 
     three_path_re = re.compile("[01]{2}6+[01]?[CF]+[01]?6*[01]{2}")
+    start_re = re.compile("[01]{2}6+[01]?[CF]")
+    repeated += len(re.compile("(?:[01]{2}6+[01]?[CF]){2,}").findall(chromosome))
+    three_paths = len(three_path_re.findall(chromosome))
+    beginning += len(start_re.findall(chromosome))
     #print(three_path_re.findall(chromosome))
 
     gaps_re = re.compile("[^09ABF]{2}[09ABF](?=[^09ABF]{2})")
+    start_re = re.compile("[^09ABF]{2}[09ABF]")
+    repeated += len(re.compile("(?:[^09ABF]{2}[09ABF]){2,}").findall(chromosome))
+    gaps = len(gaps_re.findall(chromosome))
+    beginning += len(start_re.findall(chromosome)) * 3
     #print(gaps_re.findall(chromosome))
 
     variable_gaps_re = re.compile("[^09ABF]{2}[09ABF]{2,3}(?=[^09ABF]{2})")
+    variable_gaps = len(variable_gaps_re.findall(chromosome))
     #print(variable_gaps_re.findall(chromosome))
 
     multiple_gaps_re = re.compile("(?:[178E][09ABF](?=[178E])){2,}")
+    multiple_gaps = len(multiple_gaps_re.findall(chromosome))
     #print(multiple_gaps_re.findall(chromosome))
 
     pillar_gaps_re = re.compile("[2345]0{1,3}(?=[2345])")
+    start_re = re.compile("[2345]0")
+    repeated += len(re.compile("(?:[2345]0){2,}").findall(chromosome))
+    pillar_gaps = len(pillar_gaps_re.findall(chromosome))
+    beginning += len(start_re.findall(chromosome))
     #print(pillar_gaps_re.findall(chromosome))
 
     stair_up_re = re.compile("1?2345?")
+    start_re = re.compile("1?23")
+    repeated += len(re.compile("(?:1?23){2,}").findall(chromosome))
+    stair_up = len(stair_up_re.findall(chromosome))
+    beginning += len(start_re.findall(chromosome))
     #print(stair_up_re.findall(chromosome))
 
     stair_down_re = re.compile("5?4321?")
+    start_re = re.compile("5?43")
+    repeated += len(re.compile("(?:5?43){2,}").findall(chromosome))
+    stair_down = len(stair_down_re.findall(chromosome))
+    beginning += len(start_re.findall(chromosome))
     #print(stair_down_re.findall(chromosome))
 
     empty_stair_valley_re = re.compile("1?2345?1{1,3}5?4321?")
+    start_re = re.compile("1?2345?1")
+    repeated += len(re.compile("(?:1?2345?1){2,}").findall(chromosome))
+    empty_stair_valleys = len(empty_stair_valley_re.findall(chromosome))
+    beginning += len(start_re.findall(chromosome))
     #print(empty_stair_valley_re.findall(chromosome))
 
     gap_stair_valley_re = re.compile("1?2345?0{1,3}5?4321?")
+    start_re = re.compile("1?2345?0")
+    repeated += len(re.compile("(?:1?2345?0){2,}").findall(chromosome))
+    gap_stair_valleys = len(gap_stair_valley_re.findall(chromosome))
+    beginning += len(start_re.findall(chromosome))
     #print(gap_stair_valley_re.findall(chromosome))
 
     unplayable_re_1 = re.compile("0{4,}")
+    unplayable = len(unplayable_re_1.findall(chromosome))
     unplayable_re_2 = re.compile("[01]{4,}[45]")
+    unplayable += len(unplayable_re_2.findall(chromosome))
     unplayable_re_3 = re.compile("[012]{4,}5")
+    unplayable += len(unplayable_re_3.findall(chromosome))
 
     respite_re = re.compile("1{3,}")
+    respites = len(respite_re.findall(chromosome))
 
     #print(unplayable_re_1.findall(chromosome))
     #print(unplayable_re_2.findall(chromosome))
     #print(unplayable_re_3.findall(chromosome))
 
-    return { "Valley" : len(valley_re.findall(chromosome)),
-             "Roof Valley" : len(roof_valley_re_1.findall(chromosome)) + len(roof_valley_re_2.findall(chromosome)) + len(roof_valley_re_3.findall(chromosome)),
-             "Two Path" : len(two_path_re.findall(chromosome)),
-             "Three Path" : len(three_path_re.findall(chromosome)),
-             "Gaps" : len(gaps_re.findall(chromosome)),
-             "Variable Gaps" : len(variable_gaps_re.findall(chromosome)),
-             "Multiple Gaps" : len(multiple_gaps_re.findall(chromosome)),
-             "Pillar Gaps" : len(pillar_gaps_re.findall(chromosome)),
-             "Stair Up" : len(stair_up_re.findall(chromosome)),
-             "Stair Down" : len(stair_down_re.findall(chromosome)),
-             "Empty Stair Valley" : len(empty_stair_valley_re.findall(chromosome)),
-             "Gap Stair Valley" : len(gap_stair_valley_re.findall(chromosome)),
-             "Unplayable" : len(unplayable_re_1.findall(chromosome)) + len(unplayable_re_2.findall(chromosome)) + len(unplayable_re_3.findall(chromosome)),
-             "Respite" : len(respite_re.findall(chromosome))}
+    return { "Valley" : valleys,
+             "Roof Valley" : roof_valleys,
+             "Two Path" : two_paths,
+             "Three Path" : three_paths,
+             "Gaps" : gaps,
+             "Variable Gaps" : variable_gaps,
+             "Multiple Gaps" : multiple_gaps,
+             "Pillar Gaps" : pillar_gaps,
+             "Stair Up" : stair_up,
+             "Stair Down" : stair_down,
+             "Empty Stair Valley" : empty_stair_valleys,
+             "Gap Stair Valley" : gap_stair_valleys,
+             "Unplayable" : unplayable,
+             "Respite" : respites,
+             "Repeated" : repeated,
+             "Beginnings" : beginning}
 
 def Fitness(chromosome):
     pattern_count = ScanChromosome(chromosome)
@@ -134,8 +192,9 @@ def Crossover(chr1, chr2):
     #print(kids)
     #mutate kids
     for kid in kids:
-        if random.randint(1, 100) <= mutation_prob:
-            for i in range(mutation_count):
+        r = random.randint(1, 100)
+        if r <= 5:
+            for i in range(r):
                 mut = random.randint(0, len(kid) - 1)
                 if kid[mut] == '0':
                     kid = kid[0:mut] + '1' + kid[mut + 1:]
@@ -175,8 +234,8 @@ if __name__ == "__main__":
     for i in range(generation_count):
         population = EvolvePopulation(population)
         population.sort(key = Fitness, reverse = True)
-        if i % 100 == 0:
-            print("Generation %d complete with highest fitness: %d" %(i, Fitness(population[0])))
+        #if i % 100 == 0:
+        print("Generation %d complete with highest fitness: %d" %(i, Fitness(population[0])))
 
     print("Winning fitness: %d" % Fitness(population[0]))
     print(ScanChromosome(population[0]))
